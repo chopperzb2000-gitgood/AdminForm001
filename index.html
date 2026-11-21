@@ -561,7 +561,7 @@
         lucide.createIcons();
 
         // Supabase Client Configuration (Publishable Key only - never expose secret keys)
-        const DEFAULT_SUPABASE_URL = 'https://YOUR_PROJECT_REF.supabase.co';
+        const DEFAULT_SUPABASE_URL = 'https://rwwbpaofvgfnrtxsfgwt.supabase.co';
         const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_0kVZ73UOo3nXBBHO4C_3VA_0QcZzhcj';
         const SUPABASE_URL_STORAGE_KEY = 'admin_db_supabase_url_v1';
         const LOCAL_STORAGE_KEY = 'admin_db_applications_v1';
@@ -687,7 +687,8 @@
         // Map DB row <-> App object
         function normalizeRow(row) {
             return {
-                id: row.id,
+                id: row.ref_code ?? row.id,
+                dbId: row.id ?? null,
                 fullName: row.full_name ?? row.fullName ?? '',
                 nickname: row.nickname ?? '',
                 contact: row.contact ?? '',
@@ -704,16 +705,15 @@
 
         function toDbPayload(appData) {
             return {
-                id: appData.id,
+                ref_code: appData.id,
                 full_name: appData.fullName,
                 nickname: appData.nickname,
                 contact: appData.contact,
-                age: appData.age,
+                age: appData.age ? parseInt(appData.age, 10) : null,
                 available_time: appData.availableTime,
                 experience: appData.experience,
                 reason: appData.reason,
-                status: appData.status,
-                created_at: appData.createdAt
+                status: appData.status
             };
         }
 
@@ -762,12 +762,18 @@
 
             if (supabaseClient && isSupabaseConnected) {
                 try {
-                    const { error } = await supabaseClient
+                    const { data, error } = await supabaseClient
                         .from('admin_applications')
-                        .insert([toDbPayload(appData)]);
+                        .insert([toDbPayload(appData)])
+                        .select()
+                        .single();
 
                     if (error) {
                         throw error;
+                    }
+                    if (data && data.id) {
+                        appData.dbId = data.id;
+                        saveToLocal(applications);
                     }
                     setConnectionBadge(true, 'Connected: Supabase');
                 } catch (err) {
@@ -794,7 +800,7 @@
                     const { error } = await supabaseClient
                         .from('admin_applications')
                         .update({ status: newStatus })
-                        .eq('id', id);
+                        .eq('ref_code', id);
 
                     if (error) {
                         throw error;
@@ -818,7 +824,7 @@
                     const { error } = await supabaseClient
                         .from('admin_applications')
                         .delete()
-                        .eq('id', id);
+                        .eq('ref_code', id);
 
                     if (error) {
                         throw error;
