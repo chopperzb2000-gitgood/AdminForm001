@@ -638,48 +638,16 @@
                 toast.classList.add('translate-y-20', 'opacity-0');
             }, 3000);
         }
-        if (closeDetailModal && detailModal) {
-            closeDetailModal.addEventListener('click', () => {
-                detailModal.classList.add('hidden');
-                detailModal.classList.remove('flex');
-            });
 
-            detailModal.addEventListener('click', (e) => {
-                if (e.target === detailModal) {
-                    detailModal.classList.add('hidden');
-                    detailModal.classList.remove('flex');
-                }
-            });
-        }
-
-        // Delete Confirmation Logic
-        window.promptDelete = (id) => {
-            const app = applications.find(a => a.id === id);
-            if (!app || !confirmModal || !deleteTargetName) return;
-            deleteTargetId = id;
-            deleteTargetName.textContent = `${app.fullName} (${app.nickname})`;
-            confirmModal.classList.remove('hidden');
-            confirmModal.classList.add('flex');
-        };
-
-        if (cancelDeleteBtn && confirmModal) {
-            cancelDeleteBtn.addEventListener('click', () => {
-                deleteTargetId = null;
-                confirmModal.classList.add('hidden');
-                confirmModal.classList.remove('flex');
-            });
-        }
-
-        if (confirmDeleteBtn && confirmModal) {
-            confirmDeleteBtn.addEventListener('click', async () => {
-                if (deleteTargetId) {
-                    await removeApplication(deleteTargetId);
-                    deleteTargetId = null;
-                }
-                confirmModal.classList.add('hidden');
-                confirmModal.classList.remove('flex');
-            });
-        }
+        function setConnectionBadge(connected, label) {
+            isSupabaseConnected = connected;
+            if (!storageModeBadge) return;
+            storageModeBadge.textContent = label;
+            if (connected) {
+                storageModeBadge.className = 'px-2.5 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+            } else {
+                storageModeBadge.className = 'px-2.5 py-0.5 text-[10px] font-semibold rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30';
+            }
         }
 
         // Helper: LocalStorage Operations
@@ -1227,42 +1195,48 @@
             detailModal.classList.add('flex');
         };
 
-        closeDetailModal.addEventListener('click', () => {
-            detailModal.classList.add('hidden');
-            detailModal.classList.remove('flex');
-        });
-
-        detailModal.addEventListener('click', (e) => {
-            if (e.target === detailModal) {
+        if (closeDetailModal && detailModal) {
+            closeDetailModal.addEventListener('click', () => {
                 detailModal.classList.add('hidden');
                 detailModal.classList.remove('flex');
-            }
-        });
+            });
+
+            detailModal.addEventListener('click', (e) => {
+                if (e.target === detailModal) {
+                    detailModal.classList.add('hidden');
+                    detailModal.classList.remove('flex');
+                }
+            });
+        }
 
         // Delete Confirmation Logic
         window.promptDelete = (id) => {
             const app = applications.find(a => a.id === id);
-            if (!app) return;
+            if (!app || !confirmModal || !deleteTargetName) return;
             deleteTargetId = id;
             deleteTargetName.textContent = `${app.fullName} (${app.nickname})`;
             confirmModal.classList.remove('hidden');
             confirmModal.classList.add('flex');
         };
 
-        cancelDeleteBtn.addEventListener('click', () => {
-            deleteTargetId = null;
-            confirmModal.classList.add('hidden');
-            confirmModal.classList.remove('flex');
-        });
-
-        confirmDeleteBtn.addEventListener('click', async () => {
-            if (deleteTargetId) {
-                await removeApplication(deleteTargetId);
+        if (cancelDeleteBtn && confirmModal) {
+            cancelDeleteBtn.addEventListener('click', () => {
                 deleteTargetId = null;
-            }
-            confirmModal.classList.add('hidden');
-            confirmModal.classList.remove('flex');
-        });
+                confirmModal.classList.add('hidden');
+                confirmModal.classList.remove('flex');
+            });
+        }
+
+        if (confirmDeleteBtn && confirmModal) {
+            confirmDeleteBtn.addEventListener('click', async () => {
+                if (deleteTargetId) {
+                    await removeApplication(deleteTargetId);
+                    deleteTargetId = null;
+                }
+                confirmModal.classList.add('hidden');
+                confirmModal.classList.remove('flex');
+            });
+        }
 
         // Seed Sample Data for Testing
         seedSampleBtn.addEventListener('click', async () => {
