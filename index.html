@@ -481,20 +481,6 @@
                         </button>
                     </div>
                 </div>
-
-                <!-- Quick Supabase Project URL Config Bar -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-2 border-t border-white/5 text-xs">
-                    <div class="flex items-center gap-1.5 text-slate-400 shrink-0">
-                        <i data-lucide="link" class="w-3.5 h-3.5 text-emerald-400"></i>
-                        <span>Supabase Project URL:</span>
-                    </div>
-                    <input type="url" id="supabaseUrlInput" placeholder="https://YOUR_PROJECT_REF.supabase.co"
-                        class="glass-input flex-1 px-3 py-1.5 rounded-lg text-xs font-mono text-emerald-200 placeholder-slate-500">
-                    <button type="button" id="saveSupabaseUrlBtn"
-                        class="px-3 py-1.5 rounded-lg text-xs font-medium bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition-colors cursor-pointer shrink-0">
-                        บันทึกและเชื่อมต่อ
-                    </button>
-                </div>
             </div>
 
             <!-- Applicants List Body -->
@@ -560,10 +546,9 @@
         // Initialize Lucide Icons
         lucide.createIcons();
 
-        // Supabase Client Configuration (Publishable Key only - never expose secret keys)
-        const DEFAULT_SUPABASE_URL = 'https://rwwbpaofvgfnrtxsfgwt.supabase.co';
+        // Supabase Client Configuration (Locked to fixed Project URL)
+        const SUPABASE_URL = 'https://rwwbpaofvgfnrtxsfgwt.supabase.co';
         const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_0kVZ73UOo3nXBBHO4C_3VA_0QcZzhcj';
-        const SUPABASE_URL_STORAGE_KEY = 'admin_db_supabase_url_v1';
         const LOCAL_STORAGE_KEY = 'admin_db_applications_v1';
 
         let supabaseClient = null;
@@ -596,8 +581,6 @@
         const filterBtns = document.querySelectorAll('.filter-btn');
         const seedSampleBtn = document.getElementById('seedSampleBtn');
         const storageModeBadge = document.getElementById('storageModeBadge');
-        const supabaseUrlInput = document.getElementById('supabaseUrlInput');
-        const saveSupabaseUrlBtn = document.getElementById('saveSupabaseUrlBtn');
 
         const exportMenuBtn = document.getElementById('exportMenuBtn');
         const exportDropdown = document.getElementById('exportDropdown');
@@ -669,21 +652,6 @@
             }
         }
 
-        function getConfiguredSupabaseUrl() {
-            const savedUrl = localStorage.getItem(SUPABASE_URL_STORAGE_KEY);
-            return (savedUrl && savedUrl.trim()) ? savedUrl.trim() : DEFAULT_SUPABASE_URL;
-        }
-
-        function isValidSupabaseUrl(url) {
-            if (!url || url.includes('YOUR_PROJECT_REF')) return false;
-            try {
-                const parsed = new URL(url);
-                return parsed.protocol === 'https:' && parsed.hostname.endsWith('.supabase.co');
-            } catch (_) {
-                return false;
-            }
-        }
-
         // Map DB row <-> App object
         function normalizeRow(row) {
             return {
@@ -719,21 +687,18 @@
 
         // Initialize Supabase Client & Query Rows
         async function initSupabaseAndFetch() {
-            const url = getConfiguredSupabaseUrl();
-            supabaseUrlInput.value = url;
-
             // Always load localStorage first for instant rendering and offline/fallback safety
             applications = loadFromLocal().sort((a, b) => b.createdAt - a.createdAt);
             renderDashboard();
 
-            if (!isValidSupabaseUrl(url) || !window.supabase || typeof window.supabase.createClient !== 'function') {
+            if (!window.supabase || typeof window.supabase.createClient !== 'function') {
                 supabaseClient = null;
                 setConnectionBadge(false, 'Fallback: localStorage');
                 return;
             }
 
             try {
-                supabaseClient = window.supabase.createClient(url, SUPABASE_PUBLISHABLE_KEY);
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
                 const { data, error } = await supabaseClient
                     .from('admin_applications')
                     .select('*')
@@ -835,25 +800,6 @@
                 }
             }
         }
-
-        // Save Supabase Project URL from AdminDB bar
-        saveSupabaseUrlBtn.addEventListener('click', async () => {
-            const nextUrl = supabaseUrlInput.value.trim();
-            localStorage.setItem(SUPABASE_URL_STORAGE_KEY, nextUrl);
-            if (!isValidSupabaseUrl(nextUrl)) {
-                supabaseClient = null;
-                setConnectionBadge(false, 'Fallback: localStorage');
-                showToast('ยังไม่ได้ระบุ Supabase URL ที่ถูกต้อง ใช้โหมด localStorage ชั่วคราว', 'amber');
-                return;
-            }
-            showToast('กำลังเชื่อมต่อ Supabase...', 'amber');
-            await initSupabaseAndFetch();
-            if (isSupabaseConnected) {
-                showToast('เชื่อมต่อตาราง admin_applications บน Supabase สำเร็จ');
-            } else {
-                showToast('ไม่สามารถเชื่อมต่อ Supabase ได้ ใช้โหมด localStorage แทน', 'amber');
-            }
-        });
 
         // Format Thai Date & Time
         function formatThaiDateTime(timestamp) {
